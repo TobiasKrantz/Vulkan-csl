@@ -30,7 +30,8 @@ python3 compileshaders.py --csl <path/to/csl> --include <path/to/csl/include>
 
 ## Verification
 
-Every module passes `spirv-val --target-env vulkan1.3`. The pair is
+Every module passes `spirv-val --target-env vulkan1.3`. Modules are
 additionally loaded into a real Vulkan pipeline on a software ICD (lavapipe)
-with the validation layer enabled, an independent check that a driver accepts
-and compiles the SPIR-V.
+with the validation layer enabled (the csl repo's `vk_probe`, which reflects
+descriptor bindings, push constants, and vertex inputs from the SPIR-V), an
+independent check that a driver accepts and compiles the SPIR-V.
