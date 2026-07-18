@@ -1,0 +1,54 @@
+#include <csl/csl.h>
+
+using namespace csl;
+
+struct Ubo
+{
+      matrix<f32, 4, 4> projection;
+      matrix<f32, 4, 4> model;
+      vector<f32, 4>    view_position;
+      f32               depth;
+};
+
+struct Scene
+{
+      [[csl::uniform_buffer(0, 0)]] const Ubo* ubo;
+};
+
+struct VertexInput
+{
+      [[csl::location(0)]] vector<f32, 3> position;
+      [[csl::location(1)]] vector<f32, 2> uv;
+      [[csl::location(2)]] vector<f32, 3> normal;
+};
+
+struct VertexOutput
+{
+      [[csl::position]] vector<f32, 4>    clip;
+      [[csl::location(0)]] vector<f32, 3> uv;
+      [[csl::location(1)]] f32            lod_bias;
+      [[csl::location(2)]] vector<f32, 3> normal;
+      [[csl::location(3)]] vector<f32, 3> view_vector;
+      [[csl::location(4)]] vector<f32, 3> light_vector;
+};
+
+[[csl::vertex]] VertexOutput vertex_main()
+{
+      const Scene  scene = resources<Scene>();
+      VertexInput  input = stage_input<VertexInput>();
+      VertexOutput output;
+
+      output.uv = vector<f32, 3>{ input.uv.x, input.uv.y, scene.ubo->depth };
+
+      const vector<f32, 4> local = vector<f32, 4>{ input.position.x, input.position.y, input.position.z, 1.0f };
+      output.clip                = scene.ubo->projection * scene.ubo->model * local;
+
+      const vector<f32, 4> position = scene.ubo->model * local;
+      output.normal                 = mat3(inverse(transpose(scene.ubo->model))) * input.normal;
+
+      const vector<f32, 3> light_position = vector<f32, 3>{ 0.0f, 0.0f, 0.0f };
+      const vector<f32, 3> light          = mat3(scene.ubo->model) * light_position;
+      output.light_vector                 = light - position.xyz;
+      output.view_vector                  = scene.ubo->view_position.xyz - position.xyz;
+      return output;
+}
